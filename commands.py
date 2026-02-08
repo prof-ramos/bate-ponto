@@ -5,9 +5,10 @@ Este modulo implementa os comandos disponiveis para os usuarios,
 incluindo o comando !rankingvideo conforme RF04 e secao 4.4.3 do PRD.
 """
 
+import asyncio
 import discord
 from discord.ext import commands
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Union
 
 from config import EMBED_COLOR, MAX_RANKING_SIZE
 from database import load_data
@@ -60,14 +61,23 @@ async def ranking_video(ctx: commands.Context) -> None:
 
     # Adicionar campos para cada usuario no ranking
     guild = ctx.guild
+
+    # Buscar todos os membros em paralelo usando asyncio.gather
+    # Isso melhora performance de ~2-5s para ~200-500ms (conforme Task 2)
+    member_tasks = [
+        fetch_user(guild, user_id)
+        for user_id, _ in sorted_users[:MAX_RANKING_SIZE]
+    ]
+    members = await asyncio.gather(*member_tasks, return_exceptions=True)
+
+    # Processar resultados e adicionar campos ao embed
     position = 1
-
-    for user_id, user_data in sorted_users:
-        # Buscar informacoes do usuario
-        member = await fetch_user(guild, user_id)
-
-        # Skip silencioso para usuarios inexistentes (RNF06)
-        if member is None:
+    for idx, (user_data, member) in enumerate(zip(
+        [data for _, data in sorted_users[:MAX_RANKING_SIZE]],
+        members
+    )):
+        # Pular se member é None ou Exception (RNF06)
+        if member is None or isinstance(member, Exception):
             continue
 
         # Formatar tempo
