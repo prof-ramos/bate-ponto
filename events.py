@@ -7,6 +7,7 @@ no rastreamento de câmera ligada através de on_voice_state_update.
 Seção 4.4.1 do PRD: Event Handler - Voice State
 """
 
+from database import update_video_time
 import logging
 from datetime import datetime
 from typing import Dict, Optional
@@ -70,53 +71,10 @@ async def on_voice_state_update(
             del active_video_sessions[user_id]
 
             # Atualiza dados persistentes via database.py
-            _update_video_time(user_id, duration_seconds)
+            update_video_time(user_id, duration_seconds)
 
             # Log conforme seção 6.2 do PRD
             logger.info(f"📹 {member.display_name} desligou - {duration_seconds}s gravados")
-
-
-def _update_video_time(user_id: str, duration: int) -> None:
-    """
-    Atualiza o tempo de vídeo do usuário no JSON.
-
-    Função stub que será substituída pela implementação em database.py.
-    Mantida aqui para permitir que events.py funcione de forma autônoma.
-
-    Args:
-        user_id: ID do usuário Discord como string
-        duration: Duração da sessão em segundos
-
-    Note:
-        Esta função será removida quando database.py for implementado,
-        pois a funcionalidade será importada de lá.
-    """
-    import json
-    import os
-    from pathlib import Path
-
-    json_path = Path(__file__).parent / "video_ranking.json"
-
-    # Carrega dados existentes
-    if json_path.exists():
-        with open(json_path, 'r', encoding='utf-8') as f:
-            try:
-                data = json.load(f)
-            except json.JSONDecodeError:
-                data = {}
-    else:
-        data = {}
-
-    # Atualiza dados do usuário
-    if user_id not in data:
-        data[user_id] = {"total_seconds": 0, "sessions": 0}
-
-    data[user_id]["total_seconds"] += duration
-    data[user_id]["sessions"] += 1
-
-    # Salva dados atualizados (indent=2 conforme RNF12)
-    with open(json_path, 'w', encoding='utf-8') as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
 
 
 def setup(bot: commands.Bot) -> None:
