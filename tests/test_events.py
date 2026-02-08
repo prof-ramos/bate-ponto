@@ -24,6 +24,14 @@ def mock_voice_states():
     return before, after
 
 
+@pytest.fixture(autouse=True)
+def clear_sessions():
+    """Limpa sessões antes de cada teste"""
+    active_video_sessions.clear()
+    yield
+    active_video_sessions.clear()
+
+
 @pytest.mark.asyncio
 async def test_camera_on_registers_session(mock_member, mock_voice_states):
     """Teste: ligar câmera registra sessão ativa"""
@@ -31,14 +39,13 @@ async def test_camera_on_registers_session(mock_member, mock_voice_states):
     before.self_video = False
     after.self_video = True
 
-    # Limpar sessões ativas
-    active_video_sessions.clear()
-
     await on_voice_state_update(mock_member, before, after)
 
-    # Verificar que sessão foi registrada
-    assert str(mock_member.id) in active_video_sessions
-    assert isinstance(active_video_sessions[str(mock_member.id)], datetime)
+    # Verificar que sessão foi registrada usando o novo método has_session
+    assert active_video_sessions.has_session(str(mock_member.id))
+    sessions = active_video_sessions.sessions
+    assert str(mock_member.id) in sessions
+    assert isinstance(sessions[str(mock_member.id)], datetime)
 
 
 @pytest.mark.asyncio
@@ -48,9 +55,8 @@ async def test_camera_off_updates_database(mock_member, mock_voice_states):
     before.self_video = True
     after.self_video = False
 
-    # Setup: sessão ativa existe
-    active_video_sessions.clear()
-    active_video_sessions[str(mock_member.id)] = datetime.now()
+    # Setup: sessão ativa existe usando start_session
+    await active_video_sessions.start_session(str(mock_member.id), datetime.now())
 
     # Mock database.update_video_time onde é importado em events.py
     with patch('events.update_video_time') as mock_update:
@@ -71,12 +77,11 @@ async def test_camera_off_removes_session(mock_member, mock_voice_states):
     after.self_video = False
 
     # Setup: sessão ativa existe
-    active_video_sessions.clear()
     user_id = str(mock_member.id)
-    active_video_sessions[user_id] = datetime.now()
+    await active_video_sessions.start_session(user_id, datetime.now())
 
     with patch('events.update_video_time'):
         await on_voice_state_update(mock_member, before, after)
 
-        # Verificar que sessão foi removida
-        assert user_id not in active_video_sessions
+        # Verificar que sessão foi removida usando has_session
+        assert not active_video_sessions.has_session(user_id)

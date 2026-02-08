@@ -9,6 +9,7 @@ Seção 4.4.1 do PRD: Event Handler - Voice State
 
 from database import update_video_time
 import logging
+import asyncio
 from datetime import datetime
 from typing import Dict, Optional
 
@@ -22,11 +23,77 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Estrutura de sessões ativas conforme RF07 do PRD
-# active_video_sessions = {
-#     "user_id": datetime_object
-# }
-active_video_sessions: Dict[str, datetime] = {}
+
+class VideoSessionManager:
+    """Gerenciador de sessões de vídeo com proteção de concorrência
+
+    Gerencia sessões de vídeo ativas com asyncio.Lock() para prevenir
+    race conditions quando múltiplos toggles de câmera ocorrem simultaneamente.
+
+    Estrutura interna:
+        _sessions: Dict[str, datetime] = {"user_id": datetime_object}
+    """
+
+    def __init__(self):
+        self._sessions: Dict[str, datetime] = {}
+        self._lock = asyncio.Lock()
+
+    async def start_session(self, user_id: str, timestamp: datetime) -> None:
+        """Inicia sessão de vídeo para usuário
+
+        Args:
+            user_id: ID do usuário Discord como string
+            timestamp: Timestamp de início da sessão
+        """
+        async with self._lock:
+            self._sessions[user_id] = timestamp
+
+    async def end_session(self, user_id: str) -> Optional[datetime]:
+        """Finaliza sessão e retorna timestamp de início
+
+        Args:
+            user_id: ID do usuário Discord como string
+
+        Returns:
+            Timestamp de início da sessão ou None se não existir
+        """
+        async with self._lock:
+            return self._sessions.pop(user_id, None)
+
+    def has_session(self, user_id: str) -> bool:
+        """Verifica se usuário tem sessão ativa
+
+        Nota: Este método não usa lock pois é apenas para verificação.
+        Para operações que modificam o estado, use start_session/end_session.
+
+        Args:
+            user_id: ID do usuário Discord como string
+
+        Returns:
+            True se usuário tem sessão ativa, False caso contrário
+        """
+        return user_id in self._sessions
+
+    def clear(self) -> None:
+        """Remove todas as sessões ativas
+
+        Nota: Método síncrono para uso em testes.
+        Em produção, considere adicionar versão async com lock.
+        """
+        self._sessions.clear()
+
+    @property
+    def sessions(self) -> Dict[str, datetime]:
+        """Retorna cópia das sessões (para compatibilidade com testes)
+
+        Returns:
+            Cópia do dict de sessões ativas
+        """
+        return self._sessions.copy()
+
+
+# Instância global do gerenciador de sessões
+active_video_sessions = VideoSessionManager()
 
 
 async def on_voice_state_update(
@@ -51,7 +118,7 @@ async def on_voice_state_update(
     # Detecta quando usuário liga a câmera (UC01)
     if not before.self_video and after.self_video:
         user_id = str(member.id)
-        active_video_sessions[user_id] = datetime.now()
+        await active_video_sessions.start_session(user_id, datetime.now())
 
         # Log conforme seção 6.2 do PRD
         logger.info(f"📹 {member.display_name} ligou a câmera")
@@ -60,15 +127,12 @@ async def on_voice_state_update(
     elif before.self_video and not after.self_video:
         user_id = str(member.id)
 
-        # Verifica se há sessão ativa para este usuário
-        if user_id in active_video_sessions:
+        # Finaliza sessão e obtém timestamp de início
+        start_time = await active_video_sessions.end_session(user_id)
+        if start_time:
             # Calcula duração da sessão
-            start_time = active_video_sessions[user_id]
             duration = datetime.now() - start_time
             duration_seconds = int(duration.total_seconds())
-
-            # Remove sessão ativa
-            del active_video_sessions[user_id]
 
             # Atualiza dados persistentes via database.py
             update_video_time(user_id, duration_seconds)
