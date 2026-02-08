@@ -231,6 +231,41 @@ bate-ponto/
 chmod +w /caminho/para/bate-ponto
 ```
 
+## Desenvolvimento e Testes
+
+### Executar Testes
+
+```bash
+pip install -r requirements.txt
+pytest tests/ -v
+pytest tests/ --cov=. --cov-report=html
+pytest tests/test_database.py -v
+pytest tests/integration/ -v
+```
+
+### Estrutura de Testes
+
+```
+tests/
+├── conftest.py              # Fixtures compartilhadas
+├── test_database.py         # Testes de persistencia
+├── test_events.py           # Testes de voice state handler
+├── test_commands.py         # Testes de comandos
+├── test_utils.py            # Testes de funcoes utilitarias
+├── integration/             # Testes de integracao
+│   └── test_integration.py
+└── benchmark/               # Benchmarks de performance
+    └── performance_test.py
+```
+
+### Cobertura de Testes
+
+O projeto mantem cobertura de testes acima de 80% para os módulos core:
+
+- `database.py`: 97% de cobertura
+- `utils.py`: 86% de cobertura
+- Cobertura geral: 82%
+
 ## Roadmap
 
 ### Fase 1 - MVP (Concluido)
