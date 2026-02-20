@@ -1,8 +1,8 @@
 """
-Funcoes utilitarias para o bot Discord de ranking de atividade.
+Funções utilitárias para o bot Discord de ranking de atividade.
 
-Este modulo fornece funcoes auxiliares para formatacao de tempo,
-validacao de dados e configuracao de logs estruturados.
+Este módulo fornece funções auxiliares para formatação de tempo,
+validação de dados e configuração de logs estruturados.
 """
 
 import logging
@@ -13,15 +13,15 @@ from typing import Optional
 
 def format_seconds_to_time(seconds: int) -> str:
     """
-    Converte segundos em formato legivel.
+    Converte segundos em formato legível.
 
-    Formatos possiveis:
-    - "Xh Ymin" para duracoes >= 1 hora
-    - "Xmin" para duracoes >= 1 minuto
-    - "Xs" para duracoes < 1 minuto
+    Formatos possíveis:
+    - "Xh Ymin" para durações >= 1 hora
+    - "Xmin" para durações >= 1 minuto
+    - "Xs" para durações < 1 minuto
 
     Args:
-        seconds: Tempo total em segundos (inteiro nao-negativo)
+        seconds: Tempo total em segundos (inteiro não-negativo)
 
     Returns:
         String formatada representando o tempo
@@ -35,7 +35,7 @@ def format_seconds_to_time(seconds: int) -> str:
         '45s'
     """
     if not isinstance(seconds, int) or seconds < 0:
-        raise ValueError("seconds deve ser um inteiro nao-negativo")
+        raise ValueError("seconds deve ser um inteiro não-negativo")
 
     if seconds < 60:
         return f"{seconds}s"
@@ -57,16 +57,16 @@ def format_seconds_to_time(seconds: int) -> str:
 
 def validate_user_id(user_id: str) -> bool:
     """
-    Valida se um ID de usuario Discord e valido.
+    Valida se um ID de usuário Discord é válido.
 
-    Conforme RNF09, IDs validos do Discord sao snowflakes de 18-19 digitos.
-    Esta funcao implementa a validacao basica de formato.
+    Conforme RNF09, IDs válidos do Discord são snowflakes de 18-19 dígitos.
+    Esta função implementa a validação básica de formato.
 
     Args:
-        user_id: String contendo o ID do usuario
+        user_id: String contendo o ID do usuário
 
     Returns:
-        True se o ID tem formato valido, False caso contrario
+        True se o ID tem formato válido, False caso contrário
 
     Examples:
         >>> validate_user_id("123456789012345678")
@@ -79,20 +79,20 @@ def validate_user_id(user_id: str) -> bool:
     if not isinstance(user_id, str):
         return False
 
-    # Discord snowflake IDs sao 18-19 digitos numericos
+    # Discord snowflake IDs são 18-19 dígitos numéricos
     pattern = r"^\d{18,19}$"
     return bool(re.match(pattern, user_id))
 
 
 def validate_seconds(seconds: int) -> bool:
     """
-    Valida se um valor em segundos e valido.
+    Valida se um valor em segundos é válido.
 
     Args:
         seconds: Valor em segundos a validar
 
     Returns:
-        True se seconds e um inteiro nao-negativo, False caso contrario
+        True se seconds é um inteiro não-negativo, False caso contrário
     """
     return isinstance(seconds, int) and seconds >= 0
 
@@ -105,12 +105,12 @@ def setup_logger(
     """
     Configura um logger estruturado conforme RNF11.
 
-    Formata logs com timestamp, nivel, nome do modulo e mensagem.
-    Suporta saida em console e/ou arquivo.
+    Formata logs com timestamp, nível, nome do módulo e mensagem.
+    Suporta saída em console e/ou arquivo.
 
     Args:
         name: Nome do logger (default: "bate-ponto")
-        level: Nivel de log (default: logging.INFO)
+        level: Nível de log (default: logging.INFO)
         log_file: Caminho opcional para arquivo de log
 
     Returns:
@@ -154,10 +154,10 @@ def safe_int(value: str, default: int = 0) -> int:
 
     Args:
         value: String a converter
-        default: Valor padrao em caso de erro
+        default: Valor padrão em caso de erro
 
     Returns:
-        Inteiro convertido ou valor padrao
+        Inteiro convertido ou valor padrão
     """
     try:
         return int(value)
@@ -165,13 +165,63 @@ def safe_int(value: str, default: int = 0) -> int:
         return default
 
 
+def safe_int_conversion(value: str) -> int:
+    """
+    Converte string para int com validação rigorosa.
+
+    Args:
+        value: String a converter
+
+    Returns:
+        int: Valor convertido
+
+    Raises:
+        ValueError: Se a string não for um número válido
+        TypeError: Se o valor não for string
+    """
+    if not isinstance(value, str):
+        raise TypeError("O valor deve ser uma string")
+
+    try:
+        return int(value)
+    except ValueError as e:
+        raise ValueError(f"Não é possível converter '{value}' para inteiro") from e
+
+
+def validate_and_convert_user_id(user_id: str) -> int:
+    """
+    Valida e converte user_id de string para int.
+
+    Args:
+        user_id: ID do usuário como string
+
+    Returns:
+        int: ID do usuário convertido para inteiro
+
+    Raises:
+        ValueError: Se o user_id não for válido
+        TypeError: Se o user_id não for string
+    """
+    if not isinstance(user_id, str):
+        raise TypeError("user_id deve ser uma string")
+
+    # Validar formato básico (18-19 dígitos)
+    if not validate_user_id(user_id):
+        raise ValueError(f"Formato de user_id inválido: {user_id}")
+
+    try:
+        return int(user_id)
+    except ValueError as e:
+        raise ValueError(f"Erro ao converter user_id para inteiro: {user_id}") from e
+
+
 def truncate_string(text: str, max_length: int = 50, suffix: str = "...") -> str:
     """
-    Trunca uma string se exceder o tamanho maximo.
+    Trunca uma string se exceder o tamanho máximo.
 
     Args:
         text: Texto a truncar
-        max_length: Comprimento maximo permitido
+        max_length: Comprimento máximo permitido
         suffix: Sufixo a adicionar quando truncado
 
     Returns:
@@ -188,18 +238,18 @@ def truncate_string(text: str, max_length: int = 50, suffix: str = "...") -> str
 
 async def fetch_user(guild: discord.Guild, user_id: str) -> Optional[discord.Member]:
     """
-    Busca informacoes de um usuario pelo ID.
+    Busca informações de um usuário pelo ID.
 
-    Conforme RNF06: Tratamento de erros para usuarios inexistentes/deletados.
-    Esta funcao trata excecoes silenciosamente, retornando None quando o
-    usuario nao pode ser encontrado.
+    Conforme RNF06: Tratamento de erros para usuários inexistentes/deletados.
+    Esta função trata exceções silenciosamente, retornando None quando o
+    usuário não pode ser encontrado.
 
     Args:
-        guild: Objeto Guild do Discord onde buscar o usuario
-        user_id: ID do usuario a buscar (string)
+        guild: Objeto Guild do Discord onde buscar o usuário
+        user_id: ID do usuário a buscar (string)
 
     Returns:
-        Optional[discord.Member]: Objeto Member ou None se nao encontrado.
+        Optional[discord.Member]: Objeto Member ou None se não encontrado.
 
     Example:
         >>> member = await fetch_user(guild, "123456789012345678")
@@ -207,6 +257,8 @@ async def fetch_user(guild: discord.Guild, user_id: str) -> Optional[discord.Mem
         ...     print(member.display_name)
     """
     try:
-        return await guild.fetch_member(user_id)
-    except (discord.NotFound, discord.HTTPException):
+        # Validar e converter user_id antes de usar na API
+        converted_id = validate_and_convert_user_id(user_id)
+        return await guild.fetch_member(converted_id)
+    except (ValueError, TypeError, discord.NotFound, discord.HTTPException):
         return None

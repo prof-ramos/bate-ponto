@@ -1,6 +1,8 @@
 """Tests para database.py - persistência de dados."""
 import pytest
 import json
+import os
+import time
 from pathlib import Path
 from database import load_data, save_data, update_video_time, DATA_FILE
 
@@ -43,14 +45,14 @@ class TestLoadData:
         assert data["123456789012345678"]["total_seconds"] == 3600
 
     def test_load_data_handles_corrupted_json(self, temp_data_file):
-        """Teste: trata JSON corrompido recriando arquivo vazio."""
+        """Teste: trata JSON corrompido retornando dict vazio."""
         temp_data_file.write_text("{invalid json content")
 
         data = load_data()
 
         assert data == {}
-        # Arquivo deve ter sido recriado com JSON válido
-        assert json.loads(temp_data_file.read_text()) == {}
+        # safe_load_json retorna valor padrão sem recriar o arquivo
+        # O arquivo ainda contém o JSON corrompido
 
     def test_load_data_handles_invalid_structure(self, temp_data_file):
         """Teste: trata estrutura inválida retornando dict vazio."""
@@ -222,3 +224,43 @@ class TestUpdateVideoTime:
         assert data["222222222222222222"]["total_seconds"] == 2000
         assert data["111111111111111111"]["sessions"] == 2
         assert data["222222222222222222"]["sessions"] == 1
+
+    def test_concurrent_updates_with_locking(self, temp_data_file):
+        """Teste: testa atualizações concorrentes com bloqueio de arquivo."""
+        import threading
+
+        # Função para simular atualização concorrente
+        def update_concurrently(user_id, duration, iterations):
+            for _ in range(iterations):
+                update_video_time(user_id, duration)
+
+        # Criar threads para simular concorrência
+        # Usar IDs válidos do Discord (18-19 dígitos)
+        base_id = 123456789012345678
+        threads = []
+        for i in range(5):
+            user_id = str(base_id + i)
+            thread = threading.Thread(
+                target=update_concurrently,
+                args=(user_id, 100, 10)
+            )
+            threads.append(thread)
+
+        # Iniciar todas as threads simultaneamente
+        for thread in threads:
+            thread.start()
+
+        # Aguardar todas terminarem
+        for thread in threads:
+            thread.join()
+
+        # Verificar resultados
+        data = load_data()
+        total_expected = 5 * 10 * 100  # 5 usuários * 10 iterações * 100 segundos
+
+        # Verificar que todas as atualizações foram aplicadas
+        total_seconds = sum(user_data["total_seconds"] for user_data in data.values())
+        total_sessions = sum(user_data["sessions"] for user_data in data.values())
+
+        assert total_seconds == total_expected
+        assert total_sessions == 50  # 5 usuários * 10 iterações

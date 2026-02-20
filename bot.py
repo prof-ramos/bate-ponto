@@ -16,6 +16,10 @@ from discord.ext import commands
 # Importar configurações dos módulos
 from config import DISCORD_TOKEN, COMMAND_PREFIX, get_intents, setup_logger
 
+# Importar handlers e comandos
+from events import on_voice_state_update as voice_handler
+from commands import ranking_video
+
 # Configuração de logging
 logger = setup_logger(__name__)
 
@@ -78,11 +82,7 @@ def create_bot() -> commands.Bot:
             after: Novo estado de voz
         """
         try:
-            # Importar e usar o handler do events.py
-            from events import on_voice_state_update as voice_handler
             await voice_handler(member, before, after)
-        except ImportError:
-            logger.warning('Módulo events.py não encontrado. Handler de voz não disponível.')
         except Exception as e:
             logger.error(f'Erro no handler de voice state: {e}', exc_info=True)
 
@@ -98,12 +98,7 @@ def create_bot() -> commands.Bot:
             ctx: Contexto do comando Discord
         """
         try:
-            # Importar aqui para evitar import circular
-            from commands import ranking_video
             await ranking_video(ctx)
-        except ImportError:
-            logger.warning('Módulo commands.py não encontrado. Comando ranking não disponível.')
-            await ctx.send('Comando indisponível no momento. Contate o administrador.')
         except Exception as e:
             logger.error(f'Erro no comando rankingvideo: {e}', exc_info=True)
             await ctx.send('Erro ao processar comando. Tente novamente mais tarde.')

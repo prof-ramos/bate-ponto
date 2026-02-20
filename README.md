@@ -1,36 +1,38 @@
 # Bate-Ponto Discord Bot
 
-![Python](https://img.shields.io/badge/Python-3.10%2B-blue)
+![Python](https://img.shields.io/badge/Python-3.8%2B-blue)
 ![Discord](https://img.shields.io/badge/Discord.py-2.3%2B-purple)
+![Tests](https://img.shields.io/badge/Tests-63%20passing-green)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 ## Sobre o Projeto
 
-Bate-Ponto e um bot Discord que gamifica a participacao dos membros atraves de um ranking de atividade baseado em tempo de camera ligada em canais de voz. O objetivo e incentivar o engajamento visual em reunioes e chamadas, criando uma competencia saudavel entre membros.
+Bate-Ponto é um bot Discord que gamifica a participação dos membros através de um ranking de atividade baseado em tempo de câmera ligada em canais de voz. O objetivo é incentivar o engajamento visual em reuniões e chamadas, criando uma competição saudável entre membros.
 
 ### Funcionalidades Principais
 
-- **Rastreamento automatico de camera**: Detecta quando usuarios ligam/desligam camera em tempo real
-- **Sistema de ranking**: Leaderboard dos top 10 usuarios por tempo com camera
-- **Persistencia de dados**: Armazenamento em JSON para garantir que dados nao sejam perdidos
-- **Interface visual**: Embeds estilizados no Discord para melhor experiencia
+- **Rastreamento automático de câmera**: Detecta quando usuários ligam/desligam câmera em tempo real
+- **Sistema de ranking**: Leaderboard dos top 10 usuários por tempo com câmera
+- **Persistência de dados**: Armazenamento em JSON com bloqueio de arquivo para segurança
+- **Interface visual**: Embeds estilizados no Discord para melhor experiência
 - **Logs estruturados**: Console logging para monitoramento e debug
+- **Operações atômicas**: File locking para prevenir corrupção de dados em acesso concorrente
 
-## Comandos Disponiveis
+## Comandos Disponíveis
 
-| Comando | Descricao | Uso |
+| Comando | Descrição | Uso |
 |---------|-----------|-----|
-| `!rankingvideo` | Exibe o top 10 usuarios por tempo de camera | `!rankingvideo` |
+| `!rankingvideo` | Exibe o top 10 usuários por tempo de câmera | `!rankingvideo` |
 
-## Pre-requisitos
+## Pré-requisitos
 
-- **Python 3.10+**: Certifique-se de ter o Python instalado
-- **Conta Discord**: Necessaria para criar o bot
+- **Python 3.8+**: Certifique-se de ter o Python instalado
+- **Conta Discord**: Necessária para criar o bot
 - **Token do Bot**: Obtido no [Discord Developer Portal](https://discord.com/developers/applications)
 
-## Instalacao
+## Instalação
 
-### 1. Clone o Repositorio
+### 1. Clone o Repositório
 
 ```bash
 git clone https://github.com/seu-usuario/bate-ponto.git
@@ -46,21 +48,28 @@ source .venv/bin/activate  # Linux/Mac
 .venv\Scripts\activate     # Windows
 ```
 
-### 3. Instale as Dependencias
+### 3. Instale as Dependências
 
 ```bash
 pip install -r requirements.txt
+```
+
+Para desenvolvimento, instale também as dependências de teste:
+
+```bash
+pip install -r requirements-dev.txt
 ```
 
 Ou utilizando UV (recomendado):
 
 ```bash
 uv pip install -r requirements.txt
+uv pip install -r requirements-dev.txt
 ```
 
-## Configuracao
+## Configuração
 
-### 1. Configure as Variaveis de Ambiente
+### 1. Configure as Variáveis de Ambiente
 
 Copie o arquivo de exemplo:
 
@@ -78,14 +87,14 @@ COMMAND_PREFIX=!
 ### 2. Obtenha o Token do Bot
 
 1. Acesse o [Discord Developer Portal](https://discord.com/developers/applications)
-2. Crie uma nova aplicacao
-3. Va em "Bot" e clique em "Add Bot"
+2. Crie uma nova aplicação
+3. Vá em "Bot" e clique em "Add Bot"
 4. Copie o token em "Reset Token"
 5. Cole no arquivo `.env`
 
-### 3. Configure as Permissoes do Bot
+### 3. Configure as Permissões do Bot
 
-O bot precisa das seguintes permissoes:
+O bot precisa das seguintes permissões:
 
 - **View Channels** - Para acessar canais do servidor
 - **Read Message History** - Para ler mensagens
@@ -96,10 +105,10 @@ O bot precisa das seguintes permissoes:
 
 No Discord Developer Portal, ative:
 
-- **Server Members Intent** - Para buscar informacoes de usuarios
+- **Server Members Intent** - Para buscar informações de usuários
 - **Presence Intent** (opcional) - Para detectar status
 
-URL de convite com permissoes corretas:
+URL de convite com permissões corretas:
 
 ```
 https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_ID&permissions=19456&scope=bot%20applications.commands
@@ -119,7 +128,7 @@ Ou com UV:
 uv run bot.py
 ```
 
-### Modo Producao (Recomendado)
+### Modo Produção (Recomendado)
 
 #### Usando systemd (Linux)
 
@@ -137,6 +146,7 @@ WorkingDirectory=/caminho/para/bate-ponto
 Environment="PATH=/caminho/para/.venv/bin"
 ExecStart=/caminho/para/.venv/bin/python bot.py
 Restart=always
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target
@@ -176,56 +186,84 @@ docker run -d --name bate-ponto --env-file .env bate-ponto
 
 ```
 bate-ponto/
-├── bot.py              # Arquivo principal do bot
-├── .env                # Variaveis de ambiente (nao commitar)
-├── .env.example        # Exemplo de configuracao
-├── .gitignore          # Arquivos ignorados pelo git
-├── requirements.txt    # Dependencias Python
-├── video_ranking.json  # Dados do ranking (gerado automaticamente)
-├── README.md           # Documentacao
-└── PRD.md             # Product Requirements Document
+├── bot.py                 # Ponto de entrada do bot
+├── config.py              # Configurações e constantes
+├── database.py            # Camada de persistência de dados
+├── database_lock.py       # File locking para operações atômicas
+├── events.py              # Event handlers (voice state)
+├── commands.py            # Comandos do bot (ranking)
+├── utils.py               # Funções utilitárias
+├── requirements.txt       # Dependências de produção
+├── requirements-dev.txt   # Dependências de desenvolvimento
+├── pytest.ini            # Configuração do pytest
+├── .env                  # Variáveis de ambiente (não commitar)
+├── .env.example          # Exemplo de configuração
+├── .gitignore            # Arquivos ignorados pelo git
+├── video_ranking.json    # Dados do ranking (auto-criado)
+├── README.md             # Documentação principal
+├── ARCHITECTURE.md       # Documentação de arquitetura
+├── implementation_plan.md # Plano de implementação
+└── tests/                # Suite de testes
+    ├── __init__.py
+    ├── conftest.py       # Fixtures compartilhadas
+    ├── test_database.py  # Testes de persistência
+    ├── test_events.py    # Testes de event handlers
+    └── test_utils.py     # Testes de funções utilitárias
 ```
+
+## Documentação
+
+Para detalhes técnicos e arquiteturais, consulte:
+
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Documentação completa da arquitetura do sistema
+- **[implementation_plan.md](implementation_plan.md)** - Plano de implementação e correções
 
 ## Troubleshooting
 
-### Bot nao conecta
+### Bot não conecta
 
 **Erro**: `LoginFailure: Improper token has been passed`
 
-**Solucao**: Verifique se o token no `.env` esta correto e sem espacos extras.
+**Solução**: Verifique se o token no `.env` está correto e sem espaços extras.
 
-### Comandos nao funcionam
+### Comandos não funcionam
 
-**Erro**: Bot nao responde aos comandos
+**Erro**: Bot não responde aos comandos
 
-**Solucao**:
-1. Verifique se o prefixo esta correto (default: `!`)
-2. Confirme que o bot tem permissoes de "Send Messages"
-3. Verifique se o bot esta online no servidor
+**Solução**:
+1. Verifique se o prefixo está correto (default: `!`)
+2. Confirme que o bot tem permissões de "Send Messages"
+3. Verifique se o bot está online no servidor
 
-### Erro de privilegios
+### Erro de privilégios
 
 **Erro**: `PrivilegedIntentsRequired`
 
-**Solucao**: Ative os "Privileged Gateway Intents" no Discord Developer Portal.
+**Solução**: Ative os "Privileged Gateway Intents" no Discord Developer Portal.
 
-### Dados nao sao salvos
+### Dados não são salvos
 
-**Erro**: `video_ranking.json` nao e atualizado
+**Erro**: `video_ranking.json` não é atualizado
 
-**Solucao**: Verifique as permissoes de escrita no diretorio do bot.
+**Solução**: Verifique as permissões de escrita no diretório do bot.
 
-### Bot crasha com camera ligada
+### Bot crasha com câmera ligada
 
-**Problema**: Sessoes ativas sao perdidas em restart
+**Problema**: Sessões ativas são perdidas em restart
 
-**Solucao**: E um comportamento conhecido. Sessoes ativas nao persistem por enquanto. A Fase 2 do projeto ira resolver isso.
+**Solução**: É um comportamento conhecido. Sessões ativas não persistem por enquanto. A Fase 2 do projeto irá resolver isso.
 
-### Permissao negada ao ler/escrever arquivo
+### Erro de file locking
+
+**Erro**: `FileLockError: Timeout ao tentar bloquear arquivo`
+
+**Solução**: Pode ocorrer em casos de alta concorrência. O sistema usa exponential backoff e deve retry automaticamente. Se persistir, verifique se há múltiplas instâncias do bot rodando.
+
+### Permissão negada ao ler/escrever arquivo
 
 **Erro**: `PermissionError: [Errno 13] Permission denied`
 
-**Solucao**: Verifique as permissoes do diretorio:
+**Solução**: Verifique as permissões do diretório:
 
 ```bash
 chmod +w /caminho/para/bate-ponto
@@ -236,80 +274,101 @@ chmod +w /caminho/para/bate-ponto
 ### Executar Testes
 
 ```bash
-pip install -r requirements.txt
+# Instalar dependências de desenvolvimento
+pip install -r requirements-dev.txt
+
+# Executar todos os testes
 pytest tests/ -v
+
+# Executar com coverage
 pytest tests/ --cov=. --cov-report=html
+
+# Executar teste específico
 pytest tests/test_database.py -v
-pytest tests/integration/ -v
+
+# Executar testes de um arquivo específico
+pytest tests/test_utils.py::TestFormatSecondsToTime -v
 ```
+
+### Cobertura de Testes
+
+O projeto mantém alta cobertura de testes:
+
+- **63 testes** implementados e passando
+- `database.py`: Cobertura abrangente incluindo testes de concorrência
+- `utils.py`: Cobertura completa de funções utilitárias
+- Testes de operações atômicas e file locking
 
 ### Estrutura de Testes
 
 ```
 tests/
+├── __init__.py
 ├── conftest.py              # Fixtures compartilhadas
-├── test_database.py         # Testes de persistencia
+├── test_database.py         # Testes de persistência (concorrência incluída)
 ├── test_events.py           # Testes de voice state handler
 ├── test_commands.py         # Testes de comandos
-├── test_utils.py            # Testes de funcoes utilitarias
-├── integration/             # Testes de integracao
-│   └── test_integration.py
-└── benchmark/               # Benchmarks de performance
-    └── performance_test.py
+└── test_utils.py            # Testes de funções utilitárias
 ```
-
-### Cobertura de Testes
-
-O projeto mantem cobertura de testes acima de 80% para os módulos core:
-
-- `database.py`: 97% de cobertura
-- `utils.py`: 86% de cobertura
-- Cobertura geral: 82%
 
 ## Roadmap
 
-### Fase 1 - MVP (Concluido)
+### Fase 1 - MVP (Concluído)
 
-- [x] Setup basico do bot
+- [x] Setup básico do bot
 - [x] Event handler para `self_video`
-- [x] Persistencia JSON
+- [x] Persistência JSON
 - [x] Comando `!rankingvideo`
-- [x] Logs basicos
+- [x] Logs estruturados
+- [x] File locking para operações atômicas
+- [x] Suite completa de testes (63 testes)
+- [x] Documentação de arquitetura
 
 ### Fase 2 - Melhorias (Planejado)
 
-- [ ] Persistencia de sessoes ativas
-- [ ] Comando `!meustats` (estatisticas individuais)
+- [ ] Persistência de sessões ativas
+- [ ] Comando `!meustats` (estatísticas individuais)
 - [ ] Rastreamento de tempo em voz
-- [ ] Sistema de backup automatico
+- [ ] Sistema de backup automático
 - [ ] Comando admin para reset de dados
 - [ ] Cooldown em comandos
 
-### Fase 3 - Expansao (Futuro)
+### Fase 3 - Expansão (Futuro)
 
 - [ ] Rastreamento de mensagens
-- [ ] Sistema de XP e niveis
-- [ ] Atribuicao automatica de cargos
+- [ ] Sistema de XP e níveis
+- [ ] Atribuição automática de cargos
 - [ ] Dashboard web
-- [ ] Migracao para PostgreSQL
+- [ ] Migração para PostgreSQL
 - [ ] API REST
+
+## Tecnologias Utilizadas
+
+| Componente | Tecnologia |
+|------------|------------|
+| Linguagem | Python 3.8+ |
+| Discord API | discord.py >= 2.3.0 |
+| Configuração | python-dotenv >= 1.0.0 |
+| Armazenamento | JSON (video_ranking.json) |
+| File Locking | portalocker >= 3.2.0 |
+| Testes | pytest >= 9.0.2 |
 
 ## Suporte
 
-Se encontrar problemas ou tiver sugestoes:
+Se encontrar problemas ou tiver sugestões:
 
 1. Abra uma issue no GitHub
-2. Consulte o [PRD.md](PRD.md) para detalhes tecnicos
+2. Consulte o [ARCHITECTURE.md](ARCHITECTURE.md) para detalhes técnicos
 3. Verifique os logs do bot no console
 
-## Licenca
+## Licença
 
 MIT License - Veja o arquivo LICENSE para detalhes.
 
-## Creditos
+## Créditos
 
-Desenvolvido para gamificar a participacao em servidores Discord.
+Desenvolvido para gamificar a participação em servidores Discord.
 
 ---
 
-**Nota**: Este bot deve ser usado de acordo com os Termos de Servico do Discord. O rastreamento de camera e feito apenas para fins de gamificacao e todos os dados sao armazenados localmente.
+**Nota**: Este bot deve ser usado de acordo com os Termos de Serviço do Discord. O rastreamento de câmera é feito apenas para fins de gamificação e todos os dados são armazenados localmente.
